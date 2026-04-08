@@ -395,6 +395,25 @@ st.markdown("""
     [data-testid="stSidebar"] * {
         font-family: var(--font-mixed);
     }
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] legend,
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] .stMarkdown,
+    [data-testid="stSidebar"] .stMarkdown * {
+        color: #171717 !important;
+    }
+    [data-testid="stSidebar"] input,
+    [data-testid="stSidebar"] textarea,
+    [data-testid="stSidebar"] [data-baseweb="select"] input,
+    [data-testid="stSidebar"] [data-baseweb="select"] div,
+    [data-testid="stSidebar"] [data-baseweb="tag"] span {
+        color: #171717 !important;
+    }
+    [data-testid="stSidebar"] input::placeholder,
+    [data-testid="stSidebar"] textarea::placeholder {
+        color: #7b8088 !important;
+    }
     .stTabs [data-baseweb="tab-list"] {
         gap: 0.75rem;
         border-bottom: 1px solid #dfd6c6;
@@ -755,6 +774,19 @@ st.markdown("""
         font-family: var(--font-en);
     }
     @media (max-width: 780px) {
+        [data-testid="stSidebar"] label,
+        [data-testid="stSidebar"] legend,
+        [data-testid="stSidebar"] p,
+        [data-testid="stSidebar"] span,
+        [data-testid="stSidebar"] .stMarkdown,
+        [data-testid="stSidebar"] .stMarkdown *,
+        [data-testid="stSidebar"] input,
+        [data-testid="stSidebar"] textarea,
+        [data-testid="stSidebar"] [data-baseweb="select"] input,
+        [data-testid="stSidebar"] [data-baseweb="select"] div,
+        [data-testid="stSidebar"] [data-baseweb="tag"] span {
+            color: #171717 !important;
+        }
         .block-container {
             padding-top: 1.25rem;
             max-width: 100%;
