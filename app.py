@@ -231,8 +231,8 @@ def build_issue_groups_html(issue_groups, show_sentiment=True):
         if show_sentiment and sentiment_value:
             sentiment_html = f'<span class="issue-badge">{html.escape(str(sentiment_value))}</span>'
 
-        related_items_html = ""
         if issue_group["related_articles"]:
+            related_items_html = ""
             related_items = []
             for related_article in issue_group["related_articles"]:
                 related_title = html.escape(str(related_article.get("제목", "제목 없음")))
@@ -255,36 +255,50 @@ def build_issue_groups_html(issue_groups, show_sentiment=True):
                 {''.join(related_items)}
             </ul>
             """).strip()
-        else:
-            related_items_html = dedent("""
-            <div class="issue-related-heading single-issue-heading">
-                현재 이 이슈에 묶인 추가 기사가 없습니다.
-            </div>
-            """).strip()
+            issue_blocks.append(
+                dedent(f"""
+                <details class="issue-group">
+                    <summary class="issue-summary">
+                        <div class="issue-summary-top">
+                            <div class="issue-summary-index">ISSUE {issue_index:02d}</div>
+                            <div class="issue-summary-count">{group_label}</div>
+                        </div>
+                        <div class="issue-summary-title">{representative_title}</div>
+                        <div class="issue-summary-meta">{source_summary} · 발행 {representative_time}</div>
+                        <div class="issue-summary-keywords">공통 키워드 요약: {keyword_summary}</div>
+                        <div class="issue-summary-badges">{sentiment_html}</div>
+                    </summary>
+                    <div class="issue-group-body">
+                        <div class="issue-lead-card">
+                            <div class="issue-body-label">대표 기사</div>
+                            <div class="issue-body-title">{representative_title}</div>
+                            <div class="issue-body-meta">{representative_source} · 발행 {representative_time}</div>
+                            <a class="news-card-link issue-body-link" href="{representative_link}" target="_blank">READ ARTICLE</a>
+                        </div>
+                        {related_items_html}
+                    </div>
+                </details>
+                """).strip()
+            )
+            continue
 
         issue_blocks.append(
             dedent(f"""
-            <details class="issue-group">
-                <summary class="issue-summary">
+            <article class="issue-group issue-group-single">
+                <div class="issue-summary issue-summary-single">
                     <div class="issue-summary-top">
                         <div class="issue-summary-index">ISSUE {issue_index:02d}</div>
                         <div class="issue-summary-count">{group_label}</div>
                     </div>
-                    <div class="issue-summary-title">{representative_title}</div>
-                    <div class="issue-summary-meta">{source_summary} · 발행 {representative_time}</div>
+                    <a class="issue-summary-title issue-summary-link" href="{representative_link}" target="_blank">{representative_title}</a>
+                    <div class="issue-summary-meta">{representative_source} · 발행 {representative_time}</div>
                     <div class="issue-summary-keywords">공통 키워드 요약: {keyword_summary}</div>
                     <div class="issue-summary-badges">{sentiment_html}</div>
-                </summary>
-                <div class="issue-group-body">
-                    <div class="issue-lead-card">
-                        <div class="issue-body-label">대표 기사</div>
-                        <div class="issue-body-title">{representative_title}</div>
-                        <div class="issue-body-meta">{representative_source} · 발행 {representative_time}</div>
+                    <div class="issue-summary-actions">
                         <a class="news-card-link issue-body-link" href="{representative_link}" target="_blank">READ ARTICLE</a>
                     </div>
-                    {related_items_html}
                 </div>
-            </details>
+            </article>
             """).strip()
         )
 
@@ -505,6 +519,9 @@ st.markdown("""
         cursor: pointer;
         padding: 1.3rem 1.2rem;
     }
+    .issue-summary-single {
+        cursor: default;
+    }
     .issue-summary::-webkit-details-marker {
         display: none;
     }
@@ -542,6 +559,13 @@ st.markdown("""
         margin-bottom: 0.75rem;
         transition: color 0.2s ease;
     }
+    .issue-summary-link {
+        display: block;
+        text-decoration: none;
+    }
+    .issue-summary-link:hover {
+        color: #d96f1d;
+    }
     .issue-group:hover .issue-summary-title {
         color: #b55d19;
     }
@@ -562,6 +586,10 @@ st.markdown("""
         display: flex;
         flex-wrap: wrap;
         gap: 0.45rem;
+    }
+    .issue-summary-actions {
+        margin-top: 0.95rem;
+        display: flex;
     }
     .issue-badge {
         border: 1px solid #d7b07f;
@@ -781,79 +809,92 @@ st.markdown(
 )
 
 # 사이드바 설정
-st.sidebar.title("🔍 검색 및 설정")
-st.sidebar.markdown("---")
+with st.sidebar:
+    st.title("🔍 검색 및 설정")
+    st.markdown("---")
 
-# 사전 정의 키워드 목록
-predefined_keywords = ["택스리펀드", "택스리펀", "의료관광", "외국인관광객", "인바운드 관광"]
+    # 사전 정의 키워드 목록
+    predefined_keywords = ["택스리펀드", "택스리펀", "의료관광", "외국인관광객", "인바운드 관광"]
 
-# 검색 옵션
-search_mode = st.sidebar.radio(
-    "검색 방식 선택:",
-    ["사전 정의 키워드", "카테고리 검색", "직접 입력"]
-)
-
-if search_mode == "사전 정의 키워드":
-    selected_keywords = st.sidebar.multiselect(
-        "검색할 키워드를 선택하세요 (OR 조건):",
-        predefined_keywords,
-        default=["택스리펀드"]
-    )
-    keywords_list = selected_keywords if selected_keywords else []
-    category = "all"
-elif search_mode == "직접 입력":
-    keyword_input = st.sidebar.text_input(
-        "검색 키워드를 쉼표(,)로 구분하여 입력하세요:",
-        placeholder="예: 인공지능, 경제뉴스, 기술"
-    )
-    keywords_list = [k.strip() for k in keyword_input.split(",") if k.strip()] if keyword_input else []
-    category = "all"
-else:
-    keywords_list = []
-    category = st.sidebar.selectbox(
-        "카테고리 선택:",
-        ["all", "politics", "economy", "society", "life", "world"],
-        format_func=lambda x: {
-            "all": "🌐 전체",
-            "politics": "🏛️ 정치",
-            "economy": "💰 경제",
-            "society": "👥 사회",
-            "life": "🏠 생활",
-            "world": "🌍 세계"
-        }.get(x, x)
+    # 검색 옵션
+    search_mode = st.radio(
+        "검색 방식 선택:",
+        ["직접 입력", "사전 정의 키워드"],
+        index=0
     )
 
-# 뉴스 개수 설정
-max_items = st.sidebar.slider(
-    "크롤링할 뉴스 개수 (키워드당):",
-    min_value=5,
-    max_value=100,
-    value=20,
-    step=5
-)
+    show_sentiment = True
+    show_keywords = True
+    news_sources = ["네이버 뉴스", "Google 뉴스"]
+    search_submitted = False
 
-# 분석 옵션 기본 설정
-show_sentiment = True
-show_keywords = True
+    if search_mode == "직접 입력":
+        with st.form("direct_search_form", clear_on_submit=False, enter_to_submit=True):
+            keyword_input = st.text_input(
+                "검색 키워드를 쉼표(,)로 구분하여 입력하세요:",
+                placeholder="예: 인공지능, 경제뉴스, 기술"
+            )
+            keywords_list = [k.strip() for k in keyword_input.split(",") if k.strip()] if keyword_input else []
+            category = "all"
 
-# 뉴스 출처 기본 설정
-news_sources = ["네이버 뉴스", "Google 뉴스"]
+            # 뉴스 개수 설정
+            max_items = st.slider(
+                "크롤링할 뉴스 개수 (키워드당):",
+                min_value=5,
+                max_value=100,
+                value=20,
+                step=5
+            )
 
-# 정렬 옵션
-st.sidebar.markdown("---")
-st.sidebar.title("🗂 정렬 옵션")
-sort_options = ["최신순"]
-if show_sentiment:
-    sort_options.append("정확도순")
-sort_option = st.sidebar.selectbox(
-    "뉴스 정렬 기준:",
-    sort_options,
-    index=sort_options.index("정확도순") if "정확도순" in sort_options else 0
-)
+            # 정렬 옵션
+            st.markdown("---")
+            st.title("🗂 정렬 옵션")
+            sort_options = ["최신순"]
+            if show_sentiment:
+                sort_options.append("정확도순")
+            sort_option = st.selectbox(
+                "뉴스 정렬 기준:",
+                sort_options,
+                index=sort_options.index("정확도순") if "정확도순" in sort_options else 0
+            )
 
-# 크롤링 버튼
-st.sidebar.markdown("---")
-if st.sidebar.button("Search", use_container_width=True):
+            # 크롤링 버튼
+            st.markdown("---")
+            search_submitted = st.form_submit_button("Search", use_container_width=True)
+    elif search_mode == "사전 정의 키워드":
+        selected_keywords = st.multiselect(
+            "검색할 키워드를 선택하세요 (OR 조건):",
+            predefined_keywords,
+            default=["택스리펀드"]
+        )
+        keywords_list = selected_keywords if selected_keywords else []
+        category = "all"
+
+        # 정렬 옵션
+        max_items = st.slider(
+            "크롤링할 뉴스 개수 (키워드당):",
+            min_value=5,
+            max_value=100,
+            value=20,
+            step=5
+        )
+
+        st.markdown("---")
+        st.title("🗂 정렬 옵션")
+        sort_options = ["최신순"]
+        if show_sentiment:
+            sort_options.append("정확도순")
+        sort_option = st.selectbox(
+            "뉴스 정렬 기준:",
+            sort_options,
+            index=sort_options.index("정확도순") if "정확도순" in sort_options else 0
+        )
+
+        # 크롤링 버튼
+        st.markdown("---")
+        search_submitted = st.button("Search", use_container_width=True)
+
+if search_submitted:
     with st.spinner("⏳ 뉴스 수집 중..."):
         # 진행 상황 표시
         progress_bar = st.progress(0)
@@ -876,18 +917,6 @@ if st.sidebar.button("Search", use_container_width=True):
                         all_dfs.append(df_single)
                     step += 1
                     progress_bar.progress(step / crawl_steps * 0.5)
-        else:
-            if "네이버 뉴스" in news_sources:
-                df_single = crawl_naver_news(keyword="", category=category, max_items=max_items)
-                if not df_single.empty:
-                    all_dfs.append(df_single)
-                step += 1
-            if "Google 뉴스" in news_sources:
-                df_single = crawl_google_news(keyword="", max_items=max_items)
-                if not df_single.empty:
-                    all_dfs.append(df_single)
-                step += 1
-            progress_bar.progress(0.5)
             
         # 모든 결과 합치기 (중복 제거)
         if all_dfs:
@@ -1073,6 +1102,6 @@ if st.sidebar.button("Search", use_container_width=True):
 st.markdown("---")
 st.markdown("""
     <div class='footer-note'>
-        GLOBAL TAX FREE MORNING NEWS REPORT | 2026
+        GLOBAL TAX FREE NEWS REPORT | 2026
     </div>
     """, unsafe_allow_html=True)
